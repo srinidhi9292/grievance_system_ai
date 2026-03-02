@@ -1,0 +1,177 @@
+{% extends 'grievance_portal/base.html' %}
+{% load custom_tags %}
+{% block title %}Complaint - {{ complaint.title|truncatechars:30 }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row g-4">
+        <!-- Main -->
+        <div class="col-lg-8">
+            <div class="form-card mb-4">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                    <div>
+                        <div class="d-flex gap-2 mb-2 flex-wrap">
+                            <span class="badge-category">{{ complaint.get_category_display }}</span>
+                            <span class="badge bg-{{ complaint.get_status_color }} text-white">{{ complaint.get_status_display }}</span>
+                            <span class="badge bg-{{ complaint.get_priority_color }} text-white">{{ complaint.priority_level|upper }}</span>
+                            {% if complaint.is_duplicate %}<span class="badge bg-warning text-dark">⚠️ Duplicate</span>{% endif %}
+                        </div>
+                        <h4 class="fw-bold mb-1" style="color:#1a3a6b;">{{ complaint.title }}</h4>
+                        <div class="text-muted small">
+                            <i class="bi bi-person me-1"></i>{{ complaint.user.get_full_name|default:complaint.user.username }}
+                            &nbsp;•&nbsp;
+                            <i class="bi bi-calendar3 me-1"></i>{{ complaint.created_at|date:"d M Y, H:i" }}
+                            &nbsp;•&nbsp;
+                            <i class="bi bi-hash me-1"></i>{{ complaint.id|short_uuid }}
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="score-ring border-3 mx-auto" style="width:70px;height:70px;border:4px solid {% if complaint.priority_score >= 75 %}#dc3545{% elif complaint.priority_score >= 50 %}#fd7e14{% elif complaint.priority_score >= 30 %}#ffc107{% else %}#28a745{% endif %};">
+                            {{ complaint.priority_score }}
+                        </div>
+                        <small class="text-muted d-block mt-1">Priority Score</small>
+                    </div>
+                </div>
+
+                <h6 class="text-muted fw-600 small text-uppercase mb-2">Description</h6>
+                <p style="white-space:pre-line;line-height:1.7;">{{ complaint.description }}</p>
+
+                {% if complaint.image %}
+                <div class="mt-3">
+                    <h6 class="text-muted fw-600 small text-uppercase mb-2">Attached Image</h6>
+                    <img src="{{ complaint.image.url }}" class="img-fluid rounded" style="max-height:350px;object-fit:cover;" alt="Complaint Image">
+                </div>
+                {% endif %}
+
+                {% if complaint.location_address or complaint.latitude %}
+                <div class="mt-3 p-3 rounded" style="background:#f7fafc;border:1px solid #e2e8f0;">
+                    <h6 class="text-muted fw-600 small text-uppercase mb-2"><i class="bi bi-geo-alt me-1"></i>Location</h6>
+                    {% if complaint.location_address %}<p class="mb-1 small">{{ complaint.location_address }}</p>{% endif %}
+                    {% if complaint.latitude %}
+                    <p class="text-muted small mb-2">Coordinates: {{ complaint.latitude }}, {{ complaint.longitude }}</p>
+                    <div id="complaint-map" style="height:200px;"></div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if complaint.admin_remarks %}
+                <div class="mt-3 p-3 rounded" style="background:#fff3cd;border:1px solid #ffc107;">
+                    <h6 class="fw-600 small text-uppercase mb-1"><i class="bi bi-chat-left-text me-1"></i>Admin Remarks</h6>
+                    <p class="mb-0 small">{{ complaint.admin_remarks }}</p>
+                </div>
+                {% endif %}
+
+                {% if complaint.assigned_department and complaint.assigned_department != 'general' %}
+                <div class="mt-3 p-3 rounded" style="background:#e8f0fe;border:1px solid #c3d4f5;">
+                    <small class="text-muted">Assigned Department</small>
+                    <p class="fw-bold mb-0">{{ complaint.get_assigned_department_display }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Admin Update Form -->
+            {% if user.is_admin_user %}
+            <div class="form-card">
+                <h5 class="fw-bold mb-3" style="color:#1a3a6b;"><i class="bi bi-gear me-2"></i>Update Complaint</h5>
+                <form method="post" action="{% url 'update_complaint' complaint.id %}">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            {{ update_form.status }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Assign Department</label>
+                            {{ update_form.assigned_department }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Admin Remarks</label>
+                            {{ update_form.admin_remarks }}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3">
+                        <i class="bi bi-check-circle me-1"></i>Update Status
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- AI Analysis -->
+            <div class="form-card mb-4">
+                <h6 class="fw-bold mb-3" style="color:#1a3a6b;"><i class="bi bi-cpu me-2 text-warning"></i>AI Analysis</h6>
+                <div class="d-flex flex-column gap-2">
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <small class="text-muted">Category</small>
+                        <span class="badge-category">{{ complaint.get_category_display }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <small class="text-muted">Sentiment</small>
+                        <span class="badge bg-{% if complaint.sentiment_label == 'negative' %}danger{% elif complaint.sentiment_label == 'positive' %}success{% else %}secondary{% endif %}">{{ complaint.sentiment_label|capfirst }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <small class="text-muted">Priority Level</small>
+                        <span class="badge bg-{{ complaint.get_priority_color }}">{{ complaint.priority_level|upper }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <small class="text-muted">Est. Resolution</small>
+                        <strong class="small">{{ complaint.estimated_resolution_days }} days</strong>
+                    </div>
+                    {% if complaint.expected_resolution_date %}
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <small class="text-muted">Expected Date</small>
+                        <strong class="small">{{ complaint.expected_resolution_date|date:"d M Y" }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Duplicate Info -->
+            {% if duplicate_mapping %}
+            <div class="form-card mb-4" style="border:2px solid #ffc107;">
+                <h6 class="fw-bold mb-2 text-warning"><i class="bi bi-copy me-2"></i>Duplicate Detected</h6>
+                <p class="small text-muted mb-2">This complaint is similar to:</p>
+                <a href="{% url 'complaint_detail' duplicate_mapping.master_complaint.id %}" class="text-decoration-none">
+                    <div class="p-2 rounded" style="background:#fff3cd;">
+                        <p class="fw-bold mb-0 small">{{ duplicate_mapping.master_complaint.title }}</p>
+                        <p class="text-muted mb-0" style="font-size:.78rem;">Similarity: {{ duplicate_mapping.similarity_score|floatformat:0 }}%</p>
+                    </div>
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Timeline -->
+            <div class="form-card">
+                <h6 class="fw-bold mb-3" style="color:#1a3a6b;"><i class="bi bi-clock-history me-2"></i>Status Timeline</h6>
+                {% if timeline %}
+                <div class="timeline">
+                    {% for event in timeline %}
+                    <div class="timeline-item">
+                        <div class="timeline-dot {% if forloop.last %}active{% endif %}"></div>
+                        <div class="small fw-bold text-capitalize">{{ event.status|cut:"_" }}</div>
+                        <div class="text-muted small">{{ event.message|truncatechars:80 }}</div>
+                        <div class="text-muted" style="font-size:.75rem;">{{ event.timestamp|date:"d M, H:i" }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small">No timeline events yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+{% if complaint.latitude %}
+<script>
+    var map = L.map('complaint-map').setView([{{ complaint.latitude }}, {{ complaint.longitude }}], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.marker([{{ complaint.latitude }}, {{ complaint.longitude }}])
+        .addTo(map)
+        .bindPopup('{{ complaint.title|escapejs }}')
+        .openPopup();
+</script>
+{% endif %}
+{% endblock %}

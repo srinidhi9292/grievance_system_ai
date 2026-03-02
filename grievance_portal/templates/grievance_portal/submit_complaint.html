@@ -1,0 +1,178 @@
+{% extends 'grievance_portal/base.html' %}
+{% block title %}Submit Complaint - SmartGriev{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div style="width:48px;height:48px;background:linear-gradient(135deg,#1a3a6b,#2a5298);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-plus-circle-fill text-white fs-4"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold mb-0" style="color:#1a3a6b;">Submit a Complaint</h4>
+                    <p class="text-muted small mb-0">AI will automatically classify and prioritize your complaint</p>
+                </div>
+            </div>
+
+            <!-- AI Live Preview -->
+            <div id="aiPreview" class="ai-preview mb-4">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-cpu-fill text-primary fs-5"></i>
+                    <h6 class="fw-bold mb-0" style="color:#1a3a6b;">AI Analysis Preview</h6>
+                    <span class="badge bg-warning text-dark ms-auto">Live</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fw-600 small text-muted mb-1">Category</div>
+                        <span id="aiCategory" class="badge-category">—</span>
+                    </div>
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fw-600 small text-muted mb-1">Priority</div>
+                        <span id="aiPriority" class="badge bg-secondary">—</span>
+                    </div>
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fw-600 small text-muted mb-1">Score</div>
+                        <span id="aiScore" class="fw-bold" style="color:#1a3a6b;">—</span>
+                    </div>
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fw-600 small text-muted mb-1">Est. Resolution</div>
+                        <span id="aiSLA" class="text-muted small">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-card">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-4">
+                        <label class="form-label"><i class="bi bi-type me-1"></i>Complaint Title *</label>
+                        {{ form.title }}
+                        <div class="form-text">Provide a clear, brief title (e.g., "Pothole on MG Road")</div>
+                        {% if form.title.errors %}<div class="text-danger small">{{ form.title.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label"><i class="bi bi-card-text me-1"></i>Description *</label>
+                        {{ form.description }}
+                        <div class="form-text">Describe the issue in detail. The AI will analyze this to classify and prioritize.</div>
+                        {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label"><i class="bi bi-image me-1"></i>Photo (Optional)</label>
+                        {{ form.image }}
+                        <div class="form-text">Upload an image of the issue (max 5MB)</div>
+                        {% if form.image.errors %}<div class="text-danger small">{{ form.image.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label"><i class="bi bi-geo-alt me-1"></i>Location</label>
+                        {{ form.location_address }}
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="getLocation">
+                                <i class="bi bi-cursor-fill me-1"></i>Use My Location
+                            </button>
+                            <span id="locationStatus" class="text-muted small ms-2"></span>
+                        </div>
+                        {{ form.latitude }}
+                        {{ form.longitude }}
+                    </div>
+
+                    <!-- Map for location selection -->
+                    <div class="mb-4">
+                        <label class="form-label text-muted small">Click map to set complaint location</label>
+                        <div id="map-select" style="height:250px;border-radius:10px;border:2px solid #e2e8f0;"></div>
+                    </div>
+
+                    <div class="d-flex gap-3 mt-4">
+                        <button type="submit" class="btn btn-primary px-5 py-2 fw-bold">
+                            <i class="bi bi-send-fill me-2"></i>Submit Complaint
+                        </button>
+                        <a href="{% url 'my_complaints' %}" class="btn btn-outline-secondary py-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    let debounceTimer;
+    let map, marker;
+
+    // Initialize map
+    map = L.map('map-select').setView([17.3850, 78.4867], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    map.on('click', function(e) {
+        setLocation(e.latlng.lat, e.latlng.lng);
+    });
+
+    function setLocation(lat, lng) {
+        document.getElementById('latitude').value = lat.toFixed(7);
+        document.getElementById('longitude').value = lng.toFixed(7);
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng]).addTo(map);
+        document.getElementById('locationStatus').textContent = `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+
+    // Geolocation
+    document.getElementById('getLocation').addEventListener('click', function() {
+        if (navigator.geolocation) {
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Detecting...';
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    setLocation(pos.coords.latitude, pos.coords.longitude);
+                    map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+                    this.innerHTML = '<i class="bi bi-cursor-fill me-1"></i>Use My Location';
+                },
+                () => {
+                    this.innerHTML = '<i class="bi bi-cursor-fill me-1"></i>Use My Location';
+                    document.getElementById('locationStatus').textContent = 'Location access denied';
+                }
+            );
+        }
+    });
+
+    // AI Live Preview
+    const titleEl = document.getElementById('id_title');
+    const descEl = document.getElementById('id_description');
+
+    function callAI() {
+        const title = titleEl.value.trim();
+        const desc = descEl.value.trim();
+        if (title.length < 5 || desc.length < 10) return;
+
+        fetch('/api/predict/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: JSON.stringify({title, description: desc})
+        })
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById('aiPreview').classList.add('show');
+            document.getElementById('aiCategory').textContent = d.category.charAt(0).toUpperCase() + d.category.slice(1);
+            
+            const priorityColors = {low:'success', medium:'warning', high:'danger', critical:'dark'};
+            const pb = document.getElementById('aiPriority');
+            pb.textContent = d.priority_level.toUpperCase();
+            pb.className = `badge bg-${priorityColors[d.priority_level] || 'secondary'}`;
+            
+            document.getElementById('aiScore').textContent = `${d.priority_score}/100`;
+            document.getElementById('aiSLA').textContent = `~${d.estimated_resolution_days} days`;
+        })
+        .catch(() => {});
+    }
+
+    [titleEl, descEl].forEach(el => {
+        if (el) el.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(callAI, 800);
+        });
+    });
+</script>
+{% endblock %}

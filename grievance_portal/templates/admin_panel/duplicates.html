@@ -1,0 +1,69 @@
+{% extends 'grievance_portal/base.html' %}
+{% load custom_tags %}
+{% block title %}Duplicate Clusters - SmartGriev{% endblock %}
+{% block content %}
+<div class="admin-wrapper">
+    <nav class="sidebar d-none d-lg-block">
+        <div class="px-4 mb-3"><div class="text-white fw-bold" style="font-size:.95rem;opacity:.6;">ADMINISTRATION</div></div>
+        <a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="bi bi-grid-1x2"></i>Dashboard</a>
+        <a href="{% url 'admin_complaints' %}" class="nav-link"><i class="bi bi-list-ul"></i>All Complaints</a>
+        <a href="{% url 'admin_duplicates' %}" class="nav-link active"><i class="bi bi-copy"></i>Duplicate Clusters</a>
+        <a href="{% url 'admin_analytics' %}" class="nav-link"><i class="bi bi-bar-chart-line"></i>Analytics & SLA</a>
+        <div class="sidebar-section mt-3">System</div>
+        <a href="/admin/" class="nav-link"><i class="bi bi-sliders"></i>Django Admin</a>
+        <a href="{% url 'logout' %}" class="nav-link"><i class="bi bi-box-arrow-right"></i>Logout</a>
+    </nav>
+    <main class="main-content">
+        <div class="mb-4">
+            <h4 class="fw-bold mb-0" style="color:#1a3a6b;"><i class="bi bi-copy me-2"></i>Duplicate Complaint Clusters</h4>
+            <p class="text-muted small">{{ total_duplicates }} duplicate complaint{{ total_duplicates|pluralize }} detected by AI similarity analysis</p>
+        </div>
+
+        {% if clusters %}
+            {% for cluster in clusters %}
+            <div class="form-card mb-4">
+                <div class="d-flex align-items-start gap-3 mb-3">
+                    <div class="p-2 rounded" style="background:#1a3a6b;color:#fff;font-size:.8rem;font-weight:700;white-space:nowrap;">MASTER</div>
+                    <div class="flex-grow-1">
+                        <a href="{% url 'complaint_detail' cluster.master.id %}" class="text-decoration-none">
+                            <h6 class="fw-bold mb-1" style="color:#1a3a6b;">{{ cluster.master.title }}</h6>
+                        </a>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span class="badge-category">{{ cluster.master.category }}</span>
+                            <span class="badge bg-{{ cluster.master.get_status_color }}">{{ cluster.master.get_status_display }}</span>
+                            <span class="text-muted small"><i class="bi bi-person me-1"></i>{{ cluster.master.user.username }}</span>
+                            <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>{{ cluster.master.created_at|date:"d M Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ms-4 ps-3 border-start border-2 border-warning">
+                    <p class="text-muted small fw-bold mb-2">
+                        <i class="bi bi-diagram-2 me-1"></i>{{ cluster.duplicates|length }} Duplicate{{ cluster.duplicates|length|pluralize }}
+                    </p>
+                    {% for dup in cluster.duplicates %}
+                    <div class="d-flex align-items-center gap-3 p-2 mb-2 rounded" style="background:#fff3cd;">
+                        <div class="text-warning fw-bold small">{{ dup.similarity_score|floatformat:0 }}%</div>
+                        <div class="flex-grow-1">
+                            <a href="{% url 'complaint_detail' dup.complaint.id %}" class="text-decoration-none text-dark fw-500 small">
+                                {{ dup.complaint.title }}
+                            </a>
+                            <br>
+                            <span class="text-muted" style="font-size:.75rem;">by {{ dup.complaint.user.username }} on {{ dup.complaint.created_at|date:"d M Y" }}</span>
+                        </div>
+                        <span class="badge bg-{{ dup.complaint.get_status_color }}">{{ dup.complaint.get_status_display }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5 form-card">
+                <div style="font-size:4rem;opacity:.3;">🔍</div>
+                <h5 class="text-muted">No duplicates detected yet</h5>
+                <p class="text-muted small">As more complaints are submitted, the AI will identify similar ones.</p>
+            </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

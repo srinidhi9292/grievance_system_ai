@@ -1,0 +1,131 @@
+{% extends 'grievance_portal/base.html' %}
+{% block title %}SmartGriev - AI-Powered Public Grievance Management{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section style="background: linear-gradient(135deg, #1a3a6b 0%, #2a5298 60%, #1565c0 100%); min-height: 520px; display: flex; align-items: center; position: relative; overflow: hidden;">
+    <div style="position:absolute;inset:0;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22600%22 height=%22600%22><circle cx=%22500%22 cy=%22100%22 r=%22300%22 fill=%22rgba(255,255,255,0.04)%22/><circle cx=%220%22 cy=%22500%22 r=%22250%22 fill=%22rgba(255,255,255,0.03)%22/></svg>') no-repeat;"></div>
+    <div class="container position-relative py-5">
+        <div class="row align-items-center">
+            <div class="col-lg-6 text-white">
+                <div class="d-inline-flex align-items-center gap-2 mb-3" style="background:rgba(244,162,41,.2);border:1px solid rgba(244,162,41,.4);border-radius:20px;padding:.4rem 1rem;">
+                    <i class="bi bi-stars text-warning"></i>
+                    <span style="font-size:.85rem;color:#ffd700;font-weight:600;">AI-Powered Governance Platform</span>
+                </div>
+                <h1 style="font-size:3rem;font-weight:800;line-height:1.15;margin-bottom:1.2rem;">
+                    Smart Public<br><span style="color:#f4a229;">Grievance</span><br>Management
+                </h1>
+                <p style="font-size:1.1rem;opacity:.85;margin-bottom:2rem;max-width:480px;">
+                    Submit municipal complaints and track their resolution. Our AI engine automatically classifies, prioritizes, and routes your issues to the right department.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'submit_complaint' %}" class="btn btn-accent btn-lg px-4 fw-bold">
+                            <i class="bi bi-plus-circle me-2"></i>Submit Complaint
+                        </a>
+                        <a href="{% url 'my_complaints' %}" class="btn btn-outline-light btn-lg px-4">
+                            <i class="bi bi-list-check me-2"></i>Track Complaints
+                        </a>
+                    {% else %}
+                        <a href="{% url 'register' %}" class="btn btn-accent btn-lg px-4 fw-bold">
+                            <i class="bi bi-person-plus me-2"></i>Get Started
+                        </a>
+                        <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg px-4">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6 d-none d-lg-flex justify-content-end">
+                <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:2rem;max-width:380px;backdrop-filter:blur(10px);">
+                    <h5 class="text-white fw-bold mb-3"><i class="bi bi-cpu me-2 text-warning"></i>AI Engine Live</h5>
+                    {% for label, icon, color in ai_features %}{% endfor %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for item in ai_features_list %}
+                        <div class="d-flex align-items-center gap-2" style="background:rgba(255,255,255,.06);border-radius:8px;padding:.6rem .9rem;">
+                            <i class="bi bi-check-circle-fill text-warning"></i>
+                            <span class="text-white" style="font-size:.88rem;">{{ item }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats -->
+<section class="py-4" style="background:#fff;border-bottom:1px solid #e2e8f0;">
+    <div class="container">
+        <div class="row text-center g-4">
+            <div class="col-4">
+                <div class="fw-700" style="font-size:2rem;font-weight:800;color:#1a3a6b;">{{ stats.total }}+</div>
+                <div class="text-muted small">Complaints Processed</div>
+            </div>
+            <div class="col-4">
+                <div style="font-size:2rem;font-weight:800;color:#28a745;">{{ stats.resolved }}+</div>
+                <div class="text-muted small">Issues Resolved</div>
+            </div>
+            <div class="col-4">
+                <div style="font-size:2rem;font-weight:800;color:#f4a229;">{{ stats.categories }}</div>
+                <div class="text-muted small">Categories Covered</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 style="font-weight:800;color:#1a3a6b;">How It Works</h2>
+            <p class="text-muted">Our AI-powered platform streamlines civic issue resolution</p>
+        </div>
+        <div class="row g-4">
+            {% for icon, title, desc in step_data %}{% endfor %}
+            <div class="col-md-3 text-center">
+                <div class="stat-card h-100">
+                    <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:64px;height:64px;background:#e8f0fe;border-radius:16px;font-size:1.8rem;">📝</div>
+                    <h5 class="fw-bold" style="color:#1a3a6b;">Submit Complaint</h5>
+                    <p class="text-muted small mb-0">Fill in complaint details with optional photo and location</p>
+                </div>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-card h-100">
+                    <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:64px;height:64px;background:#fff3cd;border-radius:16px;font-size:1.8rem;">🤖</div>
+                    <h5 class="fw-bold" style="color:#1a3a6b;">AI Analysis</h5>
+                    <p class="text-muted small mb-0">Instant category classification, priority scoring and duplicate detection</p>
+                </div>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-card h-100">
+                    <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:64px;height:64px;background:#d4edda;border-radius:16px;font-size:1.8rem;">⚙️</div>
+                    <h5 class="fw-bold" style="color:#1a3a6b;">Department Routing</h5>
+                    <p class="text-muted small mb-0">Complaint auto-assigned to responsible municipal department</p>
+                </div>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-card h-100">
+                    <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:64px;height:64px;background:#f8d7da;border-radius:16px;font-size:1.8rem;">✅</div>
+                    <h5 class="fw-bold" style="color:#1a3a6b;">Track & Resolve</h5>
+                    <p class="text-muted small mb-0">Monitor status updates and get notified on resolution</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+{% if not user.is_authenticated %}
+<section class="py-5" style="background:linear-gradient(135deg,#1a3a6b,#2a5298);">
+    <div class="container text-center text-white py-3">
+        <h2 class="fw-800 mb-3">Ready to report a civic issue?</h2>
+        <p class="mb-4 opacity-75">Join thousands of citizens making their communities better</p>
+        <a href="{% url 'register' %}" class="btn btn-accent btn-lg px-5 fw-bold">
+            <i class="bi bi-person-plus me-2"></i>Register Now — It's Free
+        </a>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

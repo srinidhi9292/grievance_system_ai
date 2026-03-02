@@ -1,0 +1,90 @@
+{% extends 'grievance_portal/base.html' %}
+{% block title %}Analytics & SLA - SmartGriev{% endblock %}
+{% block content %}
+<div class="admin-wrapper">
+    <nav class="sidebar d-none d-lg-block">
+        <div class="px-4 mb-3"><div class="text-white fw-bold" style="font-size:.95rem;opacity:.6;">ADMINISTRATION</div></div>
+        <a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="bi bi-grid-1x2"></i>Dashboard</a>
+        <a href="{% url 'admin_complaints' %}" class="nav-link"><i class="bi bi-list-ul"></i>All Complaints</a>
+        <a href="{% url 'admin_duplicates' %}" class="nav-link"><i class="bi bi-copy"></i>Duplicate Clusters</a>
+        <a href="{% url 'admin_analytics' %}" class="nav-link active"><i class="bi bi-bar-chart-line"></i>Analytics & SLA</a>
+        <div class="sidebar-section mt-3">System</div>
+        <a href="/admin/" class="nav-link"><i class="bi bi-sliders"></i>Django Admin</a>
+        <a href="{% url 'logout' %}" class="nav-link"><i class="bi bi-box-arrow-right"></i>Logout</a>
+    </nav>
+    <main class="main-content">
+        <div class="mb-4">
+            <h4 class="fw-bold mb-0" style="color:#1a3a6b;"><i class="bi bi-bar-chart-line me-2"></i>Analytics & SLA Report</h4>
+            <p class="text-muted small">Performance metrics and resolution time analysis</p>
+        </div>
+
+        <!-- SLA Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card text-center">
+                    <div class="stat-icon mx-auto mb-2" style="background:#d4edda;"><i class="bi bi-clock" style="color:#28a745;"></i></div>
+                    <div class="stat-number">{{ avg_resolution|default:"N/A" }}</div>
+                    <div class="stat-label">Avg Resolution Days</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card text-center">
+                    <div class="stat-icon mx-auto mb-2" style="background:#d4edda;"><i class="bi bi-check-circle" style="color:#28a745;"></i></div>
+                    <div class="stat-number">{{ total_resolved }}</div>
+                    <div class="stat-label">Total Resolved</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card text-center">
+                    <div class="stat-icon mx-auto mb-2" style="background:#fff3cd;"><i class="bi bi-hourglass" style="color:#f4a229;"></i></div>
+                    <div class="stat-number">{{ total_pending }}</div>
+                    <div class="stat-label">Still Pending</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category SLA Table -->
+        {% if cat_stats %}
+        <div class="table-card">
+            <div class="p-3 border-bottom">
+                <h6 class="fw-bold mb-0" style="color:#1a3a6b;">Resolution Time by Category</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Resolved</th>
+                            <th>Avg Days</th>
+                            <th>Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in cat_stats %}
+                        <tr>
+                            <td class="fw-500 text-capitalize">{{ stat.category }}</td>
+                            <td>{{ stat.count }}</td>
+                            <td><strong>{{ stat.avg_days }}</strong> days</td>
+                            <td style="min-width:150px;">
+                                <div class="progress" style="height:8px;border-radius:4px;">
+                                    <div class="progress-bar {% if stat.avg_days <= 5 %}bg-success{% elif stat.avg_days <= 10 %}bg-warning{% else %}bg-danger{% endif %}"
+                                         style="width:{% widthratio stat.avg_days 30 100 %}%;border-radius:4px;"></div>
+                                </div>
+                                <small class="text-muted">{% if stat.avg_days <= 5 %}Excellent{% elif stat.avg_days <= 10 %}Good{% else %}Needs Attention{% endif %}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-5 form-card">
+            <div style="font-size:4rem;opacity:.3;">📊</div>
+            <h5 class="text-muted">No resolved data yet</h5>
+            <p class="text-muted small">Analytics will appear once complaints are resolved.</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

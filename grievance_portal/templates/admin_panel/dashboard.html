@@ -1,0 +1,252 @@
+{% extends 'grievance_portal/base.html' %}
+{% load custom_tags %}
+{% block title %}Admin Dashboard - SmartGriev{% endblock %}
+{% block content %}
+<div class="admin-wrapper">
+    <!-- Sidebar -->
+    <nav class="sidebar d-none d-lg-block">
+        <div class="px-4 mb-3">
+            <div class="text-white fw-bold" style="font-size:.95rem;opacity:.6;">ADMINISTRATION</div>
+        </div>
+        <a href="{% url 'admin_dashboard' %}" class="nav-link active"><i class="bi bi-grid-1x2"></i>Dashboard</a>
+        <a href="{% url 'admin_complaints' %}" class="nav-link"><i class="bi bi-list-ul"></i>All Complaints</a>
+        <a href="{% url 'admin_duplicates' %}" class="nav-link"><i class="bi bi-copy"></i>Duplicate Clusters</a>
+        <a href="{% url 'admin_analytics' %}" class="nav-link"><i class="bi bi-bar-chart-line"></i>Analytics & SLA</a>
+        <div class="sidebar-section mt-3">System</div>
+        <a href="/admin/" class="nav-link"><i class="bi bi-sliders"></i>Django Admin</a>
+        <a href="{% url 'logout' %}" class="nav-link"><i class="bi bi-box-arrow-right"></i>Logout</a>
+    </nav>
+
+    <main class="main-content">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h4 class="fw-800 mb-0" style="color:#1a3a6b;">Command Center</h4>
+                <p class="text-muted small mb-0">Real-time grievance management overview</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'admin_complaints' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-list-ul me-1"></i>View All
+                </a>
+            </div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="stat-icon" style="background:#e8f0fe;"><i class="bi bi-file-earmark-text" style="color:#1a3a6b;"></i></div>
+                        <span class="badge bg-primary-subtle text-primary">Total</span>
+                    </div>
+                    <div class="stat-number">{{ total }}</div>
+                    <div class="stat-label">Total Complaints</div>
+                </div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="stat-icon" style="background:#d4edda;"><i class="bi bi-check-circle" style="color:#28a745;"></i></div>
+                        <span class="badge bg-success">{{ resolution_rate }}%</span>
+                    </div>
+                    <div class="stat-number">{{ resolved }}</div>
+                    <div class="stat-label">Resolved</div>
+                </div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="stat-icon" style="background:#fff3cd;"><i class="bi bi-hourglass-split" style="color:#f4a229;"></i></div>
+                        <span class="badge bg-warning text-dark">Pending</span>
+                    </div>
+                    <div class="stat-number">{{ pending }}</div>
+                    <div class="stat-label">Pending Review</div>
+                </div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="stat-icon" style="background:#f8d7da;"><i class="bi bi-copy" style="color:#dc3545;"></i></div>
+                        <span class="badge bg-danger">Dupes</span>
+                    </div>
+                    <div class="stat-number">{{ duplicates }}</div>
+                    <div class="stat-label">Duplicates Found</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="chart-card">
+                    <h6>Category Distribution</h6>
+                    <canvas id="catChart" height="220"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="chart-card">
+                    <h6>Priority Breakdown</h6>
+                    <canvas id="priorityChart" height="220"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="chart-card">
+                    <h6>7-Day Trend</h6>
+                    <canvas id="weeklyChart" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map + Recent -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-7">
+                <div class="chart-card">
+                    <h6><i class="bi bi-map me-1"></i>Complaint Locations</h6>
+                    <div id="complaint-map"></div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="chart-card">
+                    <h6>Status Overview</h6>
+                    <canvas id="statusChart" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Complaints Table -->
+        <div class="table-card">
+            <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                <h6 class="fw-bold mb-0" style="color:#1a3a6b;">Recent Complaints</h6>
+                <a href="{% url 'admin_complaints' %}" class="btn btn-outline-primary btn-sm">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Ref ID</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in recent_complaints %}
+                        <tr>
+                            <td><code class="small">{{ c.id|short_uuid }}</code></td>
+                            <td class="fw-500" style="max-width:200px;">{{ c.title|truncatechars:40 }}</td>
+                            <td><span class="badge-category">{{ c.category }}</span></td>
+                            <td>
+                                <span class="badge bg-{{ c.get_priority_color }}">{{ c.priority_level|upper }}</span>
+                            </td>
+                            <td><span class="badge bg-{{ c.get_status_color }}">{{ c.get_status_display }}</span></td>
+                            <td class="text-muted small">{{ c.created_at|date:"d M" }}</td>
+                            <td><a href="{% url 'complaint_detail' c.id %}" class="btn btn-sm btn-outline-primary">View</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const catData = {{ cat_data_json|safe }};
+const priorityData = {{ priority_data_json|safe }};
+const weeklyData = {{ weekly_data_json|safe }};
+const statusData = {{ status_data_json|safe }};
+const mapComplaints = {{ map_complaints_json|safe }};
+
+const COLORS = ['#1a3a6b','#2a5298','#f4a229','#28a745','#dc3545','#6f42c1','#fd7e14','#20c997','#0dcaf0','#6c757d'];
+
+// Category Chart
+new Chart(document.getElementById('catChart'), {
+    type: 'doughnut',
+    data: {
+        labels: catData.map(d => d.category),
+        datasets: [{
+            data: catData.map(d => d.count),
+            backgroundColor: COLORS,
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8 } } }, cutout: '65%' }
+});
+
+// Priority Chart
+const priorityColors = { low: '#28a745', medium: '#fd7e14', high: '#dc3545', critical: '#1a202c' };
+new Chart(document.getElementById('priorityChart'), {
+    type: 'bar',
+    data: {
+        labels: priorityData.map(d => d.priority_level.toUpperCase()),
+        datasets: [{
+            data: priorityData.map(d => d.count),
+            backgroundColor: priorityData.map(d => priorityColors[d.priority_level] || '#6c757d'),
+            borderRadius: 6,
+            borderSkipped: false,
+        }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f0f4f8' } }, x: { grid: { display: false } } } }
+});
+
+// Weekly Trend
+new Chart(document.getElementById('weeklyChart'), {
+    type: 'line',
+    data: {
+        labels: weeklyData.map(d => d.date),
+        datasets: [{
+            label: 'Complaints',
+            data: weeklyData.map(d => d.count),
+            borderColor: '#1a3a6b',
+            backgroundColor: 'rgba(26,58,107,0.08)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#1a3a6b',
+            pointRadius: 4,
+        }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f0f4f8' } }, x: { grid: { display: false } } } }
+});
+
+// Status Chart
+const statusColors = { submitted:'#0dcaf0', under_review:'#ffc107', in_progress:'#0d6efd', resolved:'#198754', closed:'#6c757d', rejected:'#dc3545' };
+new Chart(document.getElementById('statusChart'), {
+    type: 'pie',
+    data: {
+        labels: statusData.map(d => d.status.replace(/_/g,' ').replace(/\b\w/g, l => l.toUpperCase())),
+        datasets: [{
+            data: statusData.map(d => d.count),
+            backgroundColor: statusData.map(d => statusColors[d.status] || '#adb5bd'),
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8 } } } }
+});
+
+// Map
+const map = L.map('complaint-map').setView([17.3850, 78.4867], 10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+const priorityIcons = {
+    critical: '🔴', high: '🟠', medium: '🟡', low: '🟢'
+};
+mapComplaints.forEach(c => {
+    if (c.latitude && c.longitude) {
+        const icon = L.divIcon({
+            html: `<div style="font-size:18px;">${priorityIcons[c.priority_level] || '📍'}</div>`,
+            className: '',
+            iconSize: [24, 24]
+        });
+        L.marker([c.latitude, c.longitude], { icon })
+            .addTo(map)
+            .bindPopup(`<strong>${c.title}</strong><br><span class="badge">${c.category}</span> | ${c.status}`);
+    }
+});
+</script>
+{% endblock %}
