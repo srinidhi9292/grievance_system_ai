@@ -11,7 +11,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-produc
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -31,6 +31,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -94,6 +95,9 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
 # AI Engine Settings
 AI_MODELS_DIR = BASE_DIR / 'models_pkl'
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+]
 # Security settings (enable in production)
 # CSRF_COOKIE_SECURE = True
 # SESSION_COOKIE_SECURE = True
